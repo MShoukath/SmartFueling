@@ -12,6 +12,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Smart Fueling',
       home: HomePage(),
+      theme: ThemeData(
+        primarySwatch: Colors.deepPurple,
+      ),
     );
   }
 }
