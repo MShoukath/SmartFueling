@@ -77,6 +77,9 @@ class _LocationState extends State<Location> {
                   autoCompleteSearch(value);
                 } else {
                   _toController.text = '';
+                  setState(() {
+                    predictions = [];
+                  });
                 }
               });
             },
@@ -102,7 +105,10 @@ class _LocationState extends State<Location> {
                 if (value.isNotEmpty) {
                   autoCompleteSearch(value);
                 } else {
-                  _fromController.text = '';
+                  _toController.text = '';
+                  setState(() {
+                    predictions = [];
+                  });
                 }
               });
             },
@@ -130,6 +136,7 @@ class _LocationState extends State<Location> {
                           toPosition = details.result;
                           _toController.text = details.result!.name!;
                           predictions = [];
+                          FocusScope.of(context).unfocus();
                         });
                       }
                     }
