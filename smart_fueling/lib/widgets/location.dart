@@ -18,6 +18,7 @@ class _LocationState extends State<Location> {
                 labelText: 'Starting Location',
                 border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(20))),
+        
           ),
           SizedBox(
             height: 5,
