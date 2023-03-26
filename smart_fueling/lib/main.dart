@@ -34,7 +34,7 @@ class _HomePageState extends State<HomePage> {
 
   loc.Location location = loc.Location();
 
-  LatLng currentLocation = LatLng(13.0827, 80.2707);
+  LatLng currentUserLocation = LatLng(13.0827, 80.2707);
 
   Future<void> _getUserLocation({required loc.Location location}) async {
     bool _serviceEnabled;
@@ -55,25 +55,23 @@ class _HomePageState extends State<HomePage> {
         return;
       }
     }
-    _locationData = await location.getLocation();
-    print('Latitude & Lng of device :$_locationData.latitude');
-
-    final GoogleMapController controller = await controllerMap.future;
-    setState(() {
-      currentLocation =
-          LatLng(_locationData.latitude!, _locationData.longitude!);
-      print('Latitude cur:${currentLocation.latitude}');
-      print('Longitude cur:${currentLocation.longitude}');
-
-      controller.animateCamera(CameraUpdate.newCameraPosition(
-          _userCamera = CameraPosition(target: currentLocation)));
-    });
+    ;
   }
 
   @override
   void initState() {
     _getUserLocation(location: location);
     super.initState();
+    location.onLocationChanged.listen((loc.LocationData currentLocation) async {
+      // Use current location
+      final GoogleMapController controller = await controllerMap.future;
+      setState(() {
+        currentUserLocation =
+            LatLng(currentLocation.latitude!, currentLocation.longitude!);
+        controller.animateCamera(CameraUpdate.newCameraPosition(_userCamera =
+            CameraPosition(target: currentUserLocation, zoom: 16)));
+      });
+    });
   }
 
   @override
@@ -90,13 +88,14 @@ class _HomePageState extends State<HomePage> {
         body: Stack(children: [
           GoogleMap(
             initialCameraPosition: CameraPosition(
-              target: currentLocation,
+              target: currentUserLocation,
               zoom: 16,
             ),
+            onMapCreated: (controller) => {controllerMap.complete(controller)},
             markers: {
               Marker(
                 markerId: MarkerId('currentLocation'),
-                position: currentLocation,
+                position: currentUserLocation,
               )
             },
           ),
