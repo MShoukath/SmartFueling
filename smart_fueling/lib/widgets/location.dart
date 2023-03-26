@@ -1,14 +1,16 @@
 import 'dart:async';
-
+import 'package:location/location.dart' as loc;
 import 'package:flutter/material.dart';
 import 'package:google_place/google_place.dart';
 
-class Location extends StatefulWidget {
+class Locate extends StatefulWidget {
+  const Locate({Key? key}) : super(key: key);
+
   @override
-  State<Location> createState() => _LocationState();
+  State<Locate> createState() => _LocateState();
 }
 
-class _LocationState extends State<Location> {
+class _LocateState extends State<Locate> {
   final _fromController = TextEditingController();
   final _toController = TextEditingController();
 
