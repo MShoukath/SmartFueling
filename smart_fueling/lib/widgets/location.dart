@@ -45,7 +45,12 @@ class _LocateState extends State<Locate> {
   }
 
   void autoCompleteSearch(String value) async {
-    var result = await googlePlace.autocomplete.get(value);
+    var result = await googlePlace.autocomplete.get(
+      value,
+      location: LatLon(80.273495, 13.082990),
+      radius: 5000,
+      origin: LatLon(80.273495, 13.082990),
+    );
     if (result != null && result.predictions != null && mounted) {
       setState(() {
         predictions = result.predictions!;
