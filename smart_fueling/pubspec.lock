@@ -187,13 +187,12 @@ packages:
   google_place:
     dependency: "direct main"
     description:
-      name: google_place
-      sha256: "71538407e63f194a5a10d4747c934d26bfc4328c5ee571ffe25ae70a917f2cdc"
-      url: "https://pub.dev"
-    source: hosted
+      path: "google_place-0.4.7"
+      relative: true
+    source: path
     version: "0.4.7"
   http:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: http
       sha256: "6aa2946395183537c8b880962d935877325d6a09a2867c3970c05c0fed6ac482"

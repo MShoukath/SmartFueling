@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ffi';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart' as loc;
 import 'package:flutter/material.dart';
@@ -22,6 +23,7 @@ class _LocateState extends State<Locate> {
   DetailsResult? fromPosition;
   DetailsResult? toPosition;
 
+  bool toTextFieldVisible = false;
   late FocusNode fromFocusNode;
   late FocusNode toFocusNode;
 
@@ -50,12 +52,13 @@ class _LocateState extends State<Locate> {
   }
 
   void autoCompleteSearch(String value) async {
-    var result = await googlePlace.autocomplete.get(
-      value,
-      location: LatLon(80.273495, 13.082990),
-      radius: 5000,
-      origin: LatLon(80.273495, 13.082990),
-    );
+    var result = await googlePlace.autocomplete.get(value,
+        location: LatLon(80.273495, 13.082990),
+        radius: 50000,
+        origin: LatLon(80.273495, 13.082990),
+        language: 'en',
+        types: 'address',
+        locationBias: 'circle');
     if (result != null && result.predictions != null && mounted) {
       setState(() {
         predictions = result.predictions!;
@@ -99,74 +102,96 @@ class _LocateState extends State<Locate> {
           SizedBox(
             height: 5,
           ),
-          TextField(
-            controller: _toController,
-            focusNode: toFocusNode,
-            decoration: InputDecoration(
-                hintText: 'Destination',
-                contentPadding: EdgeInsets.all(10),
-                filled: true,
-                fillColor: Colors.white,
-                constraints: BoxConstraints(maxHeight: 50),
-                // labelText: 'Enter Destination',
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10))),
-            onChanged: (value) {
-              if (_debounce?.isActive ?? false) _debounce!.cancel();
-              _debounce = Timer(const Duration(milliseconds: 500), () {
-                if (value.isNotEmpty) {
-                  autoCompleteSearch(value);
-                } else {
-                  _toController.text = '';
-                  setState(() {
-                    predictions = [];
-                  });
-                }
-              });
-            },
+          Visibility(
+            visible: toTextFieldVisible,
+            child: TextField(
+              controller: _toController,
+              focusNode: toFocusNode,
+              decoration: InputDecoration(
+                  hintText: 'Destination',
+                  contentPadding: EdgeInsets.all(10),
+                  filled: true,
+                  fillColor: Colors.white,
+                  constraints: BoxConstraints(maxHeight: 50),
+                  // labelText: 'Enter Destination',
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10))),
+              onChanged: (value) {
+                if (_debounce?.isActive ?? false) _debounce!.cancel();
+                _debounce = Timer(const Duration(milliseconds: 200), () {
+                  if (value.isNotEmpty) {
+                    autoCompleteSearch(value);
+                  } else {
+                    _toController.text = '';
+                    setState(() {
+                      predictions = [];
+                    });
+                  }
+                });
+              },
+            ),
           ),
           ListView.builder(
             itemBuilder: (context, index) {
-              return Container(
-                color: Colors.white,
-                child: ListTile(
-                  tileColor: Colors.white,
-                  title: Text(predictions[index].description!.toString()),
-                  onTap: () async {
-                    final placeId = predictions[index].placeId;
-                    final details = await googlePlace.details.get(placeId!);
-                    if (details != null && details.result != null && mounted) {
-                      if (fromFocusNode.hasFocus) {
-                        setState(() {
-                          fromPosition = details.result;
-                          _fromController.text = details.result!.name!;
-                          predictions = [];
-                          toFocusNode.requestFocus();
-                        });
-                        widget.setMarker(
-                            markerPosition: LatLng(
-                                details.result!.geometry!.location!.lat!,
-                                details.result!.geometry!.location!.lng!),
-                            markerType: 'from',
-                            markerSelected: true);
-                      } else {
-                        setState(() {
-                          toPosition = details.result;
-                          _toController.text = details.result!.name!;
-                          predictions = [];
-                          FocusScope.of(context).unfocus();
-                        });
-                        widget.setMarker(
-                            markerPosition: LatLng(
-                                details.result!.geometry!.location!.lat!,
-                                details.result!.geometry!.location!.lng!),
-                            markerType: 'to',
-                            markerSelected: true);
+              if (index == 0 && fromFocusNode.hasFocus) {
+                return Container(
+                  color: Colors.white,
+                  child: ListTile(
+                    leading: Icon(
+                      Icons.my_location,
+                      color: Colors.blue,
+                    ),
+                    tileColor: Colors.white,
+                    title: Text('Use my current location'),
+                    onTap: () async {},
+                  ),
+                );
+              } else {
+                return Container(
+                  color: Colors.white,
+                  child: ListTile(
+                    tileColor: Colors.white,
+                    title: Text(predictions[index - 1].description!.toString()),
+                    onTap: () async {
+                      final placeId = predictions[index - 1].placeId;
+                      final details = await googlePlace.details.get(placeId!);
+                      if (details != null &&
+                          details.result != null &&
+                          mounted) {
+                        if (fromFocusNode.hasFocus) {
+                          setState(() {
+                            fromPosition = details.result;
+                            _fromController.text =
+                                details.result!.formattedAddress!;
+                            predictions = [];
+                            toTextFieldVisible = true;
+                            toFocusNode.requestFocus();
+                          });
+                          widget.setMarker(
+                              markerPosition: LatLng(
+                                  details.result!.geometry!.location!.lat!,
+                                  details.result!.geometry!.location!.lng!),
+                              markerType: 'from',
+                              markerSelected: true);
+                        } else {
+                          setState(() {
+                            toPosition = details.result;
+                            _toController.text = details.result!.name!;
+                            predictions = [];
+                            FocusScope.of(context).unfocus();
+                          });
+                          widget.setMarker(
+                              markerPosition: LatLng(
+                                  details.result!.geometry!.location!.lat!,
+                                  details.result!.geometry!.location!.lng!),
+                              markerType: 'to',
+                              markerSelected: true);
+                        }
                       }
-                    }
-                  },
-                ),
-              );
+                    },
+                  ),
+                );
+              }
             },
             itemCount: predictions.length,
             shrinkWrap: true,

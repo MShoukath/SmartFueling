@@ -56,6 +56,17 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  moveToUser() async {
+    final GoogleMapController controller = await controllerMap.future;
+    setState(() {
+      controller.animateCamera(
+          CameraUpdate.newCameraPosition(_userCamera = CameraPosition(
+        target: currentUserLocation,
+        zoom: 16,
+      )));
+    });
+  }
+
   Future<void> _enableLocationService({required loc.Location location}) async {
     bool _serviceEnabled;
     loc.PermissionStatus _permissionGranted;
@@ -78,13 +89,7 @@ class _HomePageState extends State<HomePage> {
     ;
     _locationData = await location.getLocation();
 
-    final GoogleMapController controller = await controllerMap.future;
-    setState(() {
-      currentUserLocation =
-          LatLng(_locationData.latitude!, _locationData.longitude!);
-      controller.animateCamera(CameraUpdate.newCameraPosition(
-          _userCamera = CameraPosition(target: currentUserLocation, zoom: 16)));
-    });
+    moveToUser();
   }
 
   @override
@@ -114,7 +119,9 @@ class _HomePageState extends State<HomePage> {
         ),
         body: Stack(children: [
           GoogleMap(
-            myLocationButtonEnabled: true,
+            // myLocationButtonEnabled: true,
+            // trafficEnabled: true,
+            zoomControlsEnabled: false,
             myLocationEnabled: true,
             initialCameraPosition: CameraPosition(
               target: currentUserLocation,
@@ -153,7 +160,18 @@ class _HomePageState extends State<HomePage> {
               Metrics(),
             ],
           )
-        ]));
+        ]),
+        floatingActionButton: Padding(
+          padding: const EdgeInsets.fromLTRB(0.0, 0.0, 0.0, 60.0),
+          child: FloatingActionButton(
+            child: Icon(Icons.my_location_outlined),
+            tooltip: 'Get Current Location',
+            elevation: 8,
+            onPressed: () {
+              moveToUser();
+            },
+          ),
+        ));
   }
 }
 
