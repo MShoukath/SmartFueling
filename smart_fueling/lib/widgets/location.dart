@@ -133,7 +133,9 @@ class _LocateState extends State<Locate> {
           ),
           ListView.builder(
             itemBuilder: (context, index) {
+              int offset = 0;
               if (index == 0 && fromFocusNode.hasFocus) {
+                offset = 1;
                 return Container(
                   color: Colors.white,
                   child: ListTile(
@@ -151,9 +153,10 @@ class _LocateState extends State<Locate> {
                   color: Colors.white,
                   child: ListTile(
                     tileColor: Colors.white,
-                    title: Text(predictions[index - 1].description!.toString()),
+                    title: Text(
+                        predictions[index - offset].description!.toString()),
                     onTap: () async {
-                      final placeId = predictions[index - 1].placeId;
+                      final placeId = predictions[index - offset].placeId;
                       final details = await googlePlace.details.get(placeId!);
                       if (details != null &&
                           details.result != null &&
