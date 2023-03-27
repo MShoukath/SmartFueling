@@ -1,4 +1,5 @@
 import 'dart:async';
+// import 'dart:html';
 
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -30,13 +31,32 @@ class _HomePageState extends State<HomePage> {
   final Completer<GoogleMapController> controllerMap =
       Completer<GoogleMapController>();
 
-  CameraPosition _userCamera = CameraPosition(target: LatLng(13.0827, 80.2707));
-
   loc.Location location = loc.Location();
 
   LatLng currentUserLocation = LatLng(13.0827, 80.2707);
+  CameraPosition _userCamera = CameraPosition(target: LatLng(13.0827, 80.2707));
 
-  Future<void> _getUserLocation({required loc.Location location}) async {
+  LatLng fromLocation = LatLng(13.0827, 80.2707);
+  bool fromLocationSelected = false;
+  LatLng toLocation = LatLng(13.0827, 80.2707);
+  bool toLocationSelected = false;
+
+  setMarkerCallback(
+      {LatLng markerPosition = const LatLng(13.0827, 80.2707),
+      String markerType = 'from',
+      bool markerSelected = false}) {
+    setState(() {
+      if (markerType == 'from') {
+        fromLocation = markerPosition;
+        fromLocationSelected = markerSelected;
+      } else if (markerType == 'to') {
+        toLocation = markerPosition;
+        toLocationSelected = markerSelected;
+      }
+    });
+  }
+
+  Future<void> _enableLocationService({required loc.Location location}) async {
     bool _serviceEnabled;
     loc.PermissionStatus _permissionGranted;
     loc.LocationData _locationData;
@@ -56,11 +76,20 @@ class _HomePageState extends State<HomePage> {
       }
     }
     ;
+    _locationData = await location.getLocation();
+
+    final GoogleMapController controller = await controllerMap.future;
+    setState(() {
+      currentUserLocation =
+          LatLng(_locationData.latitude!, _locationData.longitude!);
+      controller.animateCamera(CameraUpdate.newCameraPosition(
+          _userCamera = CameraPosition(target: currentUserLocation, zoom: 16)));
+    });
   }
 
   @override
   void initState() {
-    _getUserLocation(location: location);
+    _enableLocationService(location: location);
     super.initState();
     location.onLocationChanged.listen((loc.LocationData currentLocation) async {
       // Use current location
@@ -68,8 +97,6 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         currentUserLocation =
             LatLng(currentLocation.latitude!, currentLocation.longitude!);
-        controller.animateCamera(CameraUpdate.newCameraPosition(_userCamera =
-            CameraPosition(target: currentUserLocation, zoom: 16)));
       });
     });
   }
@@ -87,6 +114,8 @@ class _HomePageState extends State<HomePage> {
         ),
         body: Stack(children: [
           GoogleMap(
+            myLocationButtonEnabled: true,
+            myLocationEnabled: true,
             initialCameraPosition: CameraPosition(
               target: currentUserLocation,
               zoom: 16,
@@ -96,6 +125,21 @@ class _HomePageState extends State<HomePage> {
               Marker(
                 markerId: MarkerId('currentLocation'),
                 position: currentUserLocation,
+                icon: BitmapDescriptor.defaultMarkerWithHue(
+                    BitmapDescriptor.hueBlue),
+                visible: false,
+              ),
+              Marker(
+                markerId: MarkerId('fromLocation'),
+                position: fromLocation,
+                icon: BitmapDescriptor.defaultMarker,
+                visible: fromLocationSelected,
+              ),
+              Marker(
+                markerId: MarkerId('toLocation'),
+                position: toLocation,
+                icon: BitmapDescriptor.defaultMarker,
+                visible: toLocationSelected,
               )
             },
           ),
@@ -103,7 +147,9 @@ class _HomePageState extends State<HomePage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Locate(),
+              Locate(
+                setMarker: setMarkerCallback,
+              ),
               Metrics(),
             ],
           )

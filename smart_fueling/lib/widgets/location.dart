@@ -1,10 +1,15 @@
 import 'dart:async';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart' as loc;
 import 'package:flutter/material.dart';
 import 'package:google_place/google_place.dart';
 
 class Locate extends StatefulWidget {
-  const Locate({Key? key}) : super(key: key);
+  late Function setMarker;
+  Locate({
+    Key? key,
+    required this.setMarker,
+  }) : super(key: key);
 
   @override
   State<Locate> createState() => _LocateState();
@@ -138,6 +143,12 @@ class _LocateState extends State<Locate> {
                           predictions = [];
                           toFocusNode.requestFocus();
                         });
+                        widget.setMarker(
+                            markerPosition: LatLng(
+                                details.result!.geometry!.location!.lat!,
+                                details.result!.geometry!.location!.lng!),
+                            markerType: 'from',
+                            markerSelected: true);
                       } else {
                         setState(() {
                           toPosition = details.result;
@@ -145,6 +156,12 @@ class _LocateState extends State<Locate> {
                           predictions = [];
                           FocusScope.of(context).unfocus();
                         });
+                        widget.setMarker(
+                            markerPosition: LatLng(
+                                details.result!.geometry!.location!.lat!,
+                                details.result!.geometry!.location!.lng!),
+                            markerType: 'to',
+                            markerSelected: true);
                       }
                     }
                   },
