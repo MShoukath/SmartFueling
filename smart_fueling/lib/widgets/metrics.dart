@@ -11,13 +11,13 @@ class _MetricsState extends State<Metrics> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.fromLTRB(0, 10, 0, 0),
+      padding: const EdgeInsets.fromLTRB(0, 10, 0, 0),
       child: Card(
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Column(children: [
+            Column(children: const [
               SizedBox(height: 5),
               Icon(Icons.route_outlined),
               Text('Estimated Range'),
@@ -26,7 +26,7 @@ class _MetricsState extends State<Metrics> {
                 height: 5,
               ),
             ]),
-            Column(children: [
+            Column(children: const [
               SizedBox(height: 5),
               Icon(Icons.local_gas_station_outlined),
               Text('Mileage'),
