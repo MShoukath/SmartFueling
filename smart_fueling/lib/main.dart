@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:location/location.dart' as loc;
+
 import './widgets/location.dart';
 import './widgets/metrics.dart';
 
@@ -34,8 +34,6 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final Completer<GoogleMapController> controllerMap =
       Completer<GoogleMapController>();
-
-  loc.Location location = loc.Location();
 
   LatLng currentUserLocation = const LatLng(13.0827, 80.2707);
 
