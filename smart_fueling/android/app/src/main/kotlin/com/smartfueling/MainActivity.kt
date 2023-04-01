@@ -1,4 +1,4 @@
-package com.example.dummy
+package com.smartfueling
 
 import io.flutter.embedding.android.FlutterActivity
 

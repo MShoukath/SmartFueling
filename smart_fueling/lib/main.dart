@@ -1,6 +1,6 @@
 import 'dart:async';
 // import 'dart:html';
-
+import 'package:geolocator/geolocator.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart' as loc;
@@ -66,7 +66,7 @@ class _HomePageState extends State<HomePage> {
     if (markerList.length > 1) {
       final GoogleMapController controller = await controllerMap.future;
       controller.animateCamera(
-          CameraUpdate.newLatLngBounds(boundsFromLatLngList(markerList), 120));
+          CameraUpdate.newLatLngBounds(boundsFromLatLngList(markerList), 110));
     } else {
       moveToUser();
     }
@@ -99,23 +99,36 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  Future<void> _enableLocationService({required loc.Location location}) async {
-    bool _serviceEnabled;
-    loc.PermissionStatus _permissionGranted;
-    _serviceEnabled = await location.serviceEnabled();
-    if (!_serviceEnabled) {
-      _serviceEnabled = await location.requestService();
-      if (!_serviceEnabled) {
-        return;
+  Future<void> _enableLocationService() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    // Test if location services are enabled.
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      // Location services are not enabled don't continue
+      // accessing the position and request users of the
+      // App to enable the location services.
+      return Future.error('Location services are disabled.');
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        // Permissions are denied, next time you could try
+        // requesting permissions again (this is also where
+        // Android's shouldShowRequestPermissionRationale
+        // returned true. According to Android guidelines
+        // your App should show an explanatory UI now.
+        return Future.error('Location permissions are denied');
       }
     }
 
-    _permissionGranted = await location.hasPermission();
-    if (_permissionGranted == loc.PermissionStatus.denied) {
-      _permissionGranted = await location.requestPermission();
-      if (_permissionGranted != loc.PermissionStatus.granted) {
-        return;
-      }
+    if (permission == LocationPermission.deniedForever) {
+      // Permissions are denied forever, handle appropriately.
+      return Future.error(
+          'Location permissions are permanently denied, we cannot request permissions.');
     }
     // _locationData = await location.getLocation();
 
@@ -124,13 +137,19 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void initState() {
-    _enableLocationService(location: location);
+    _enableLocationService();
     super.initState();
-    location.onLocationChanged.listen((loc.LocationData currentLocation) async {
-      // Use current location
+
+    const LocationSettings locationSettings = LocationSettings(
+      accuracy: LocationAccuracy.high,
+      distanceFilter: 40,
+    );
+
+    Geolocator.getPositionStream(locationSettings: locationSettings)
+        .listen((Position? position) {
+      position ?? const LatLng(13.0827, 80.2707);
       setState(() {
-        currentUserLocation =
-            LatLng(currentLocation.latitude!, currentLocation.longitude!);
+        currentUserLocation = LatLng(position!.latitude, position.longitude);
       });
     });
   }
@@ -194,16 +213,15 @@ class _HomePageState extends State<HomePage> {
         floatingActionButton: Padding(
           padding: const EdgeInsets.fromLTRB(0.0, 0.0, 0.0, 60.0),
           child: FloatingActionButton(
-            child: const Icon(Icons.my_location_outlined),
             tooltip: 'Get Current Location',
             elevation: 8,
             onPressed: () {
               moveToUser();
             },
+            child: const Icon(Icons.my_location_outlined),
           ),
         ));
   }
 }
 
 //Attaining Device location
-
