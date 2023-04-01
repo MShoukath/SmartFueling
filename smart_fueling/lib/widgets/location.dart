@@ -2,13 +2,17 @@ import 'dart:async';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:google_place/google_place.dart';
+// import 'package:geocoder/geocoder.dart';
+import 'package:location_geocoder/location_geocoder.dart';
 
 // ignore: must_be_immutable
 class Locate extends StatefulWidget {
   late Function setMarker;
+  late LatLng userLocation;
   Locate({
     Key? key,
     required this.setMarker,
+    required this.userLocation,
   }) : super(key: key);
 
   @override
@@ -18,6 +22,8 @@ class Locate extends StatefulWidget {
 class _LocateState extends State<Locate> {
   final _fromController = TextEditingController();
   final _toController = TextEditingController();
+
+  static const String gapiKey = 'AIzaSyC7bvDC-YbKrrd1Xmwjjd_XIu0SPwkpYrU';
 
   DetailsResult? fromPosition;
   DetailsResult? toPosition;
@@ -37,7 +43,6 @@ class _LocateState extends State<Locate> {
     fromFocusNode = FocusNode();
     toFocusNode = FocusNode();
 
-    String gapiKey = 'AIzaSyC7bvDC-YbKrrd1Xmwjjd_XIu0SPwkpYrU';
     googlePlace = GooglePlace(gapiKey);
   }
 
@@ -50,9 +55,11 @@ class _LocateState extends State<Locate> {
 
   void autoCompleteSearch(String value) async {
     var result = await googlePlace.autocomplete.get(value,
-        location: const LatLon(13.0827, 80.2707),
+        location:
+            LatLon(widget.userLocation.latitude, widget.userLocation.longitude),
         radius: 50000,
-        origin: const LatLon(13.0827, 80.2707),
+        origin:
+            LatLon(widget.userLocation.latitude, widget.userLocation.longitude),
         language: 'en',
         // types: 'address',
         locationBias: 'circle');
@@ -83,6 +90,7 @@ class _LocateState extends State<Locate> {
 
   @override
   Widget build(BuildContext context) {
+    final LocatitonGeocoder geocoder = LocatitonGeocoder(gapiKey);
     return Container(
       padding: const EdgeInsets.fromLTRB(10, 10, 10, 5),
       child: Column(
@@ -167,7 +175,23 @@ class _LocateState extends State<Locate> {
                     ),
                     tileColor: Colors.white,
                     title: const Text('Use my current location'),
-                    onTap: () async {},
+                    onTap: () async {
+                      var addresses = await geocoder
+                          .findAddressesFromCoordinates(Coordinates(
+                              widget.userLocation.latitude,
+                              widget.userLocation.longitude));
+                      // var first = addresses.first;
+                      setState(() {
+                        _fromController.text = addresses.first.addressLine!;
+                        predictions = [];
+                        toTextFieldVisible = true;
+                        toFocusNode.requestFocus();
+                      });
+                      widget.setMarker(
+                          markerPosition: widget.userLocation,
+                          markerType: 'from',
+                          markerVisible: true);
+                    },
                   ),
                 );
               } else {

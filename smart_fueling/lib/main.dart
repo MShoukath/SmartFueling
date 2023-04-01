@@ -1,9 +1,7 @@
-import 'dart:async';
-// import 'dart:html';
-import 'package:geolocator/geolocator.dart';
 import 'package:flutter/material.dart';
+import 'dart:async';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-
 import './widgets/location.dart';
 import './widgets/metrics.dart';
 
@@ -203,6 +201,7 @@ class _HomePageState extends State<HomePage> {
             children: [
               Locate(
                 setMarker: setMarkerCallback,
+                userLocation: currentUserLocation,
               ),
               const Metrics(),
             ],
