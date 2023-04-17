@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1074217259544",
+    "project_id": "smart-fueling-96df9",
+    "storage_bucket": "smart-fueling-96df9.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1074217259544:android:7d56f2504ef45e16b2696d",
+        "android_client_info": {
+          "package_name": "com.smartfueling"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1074217259544-efoc1dhgcdk7imnsqao4sh6pc4p2i25h.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDdft_nLun_OMej63OPK7j1qRRDipQFgPg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1074217259544-efoc1dhgcdk7imnsqao4sh6pc4p2i25h.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
