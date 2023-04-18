@@ -70,7 +70,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       .signInWithEmailAndPassword(
                           email: _userEmail.text, password: _userPassword.text)
                       .then((value) {
-                    Navigator.push(
+                    Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
                           builder: (context) => HomePage(),

@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:smartfueling/main.dart';
+import 'package:smartfueling/screens/login_screen.dart';
 //import 'package:user_auth/screens/home_screen.dart';
 import 'package:smartfueling/widgets/logo.dart';
 
@@ -72,8 +73,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       .createUserWithEmailAndPassword(
                           email: _userEmail.text, password: _userPassword.text)
                       .then((value) {
-                    Navigator.push(context,
-                        MaterialPageRoute(builder: (context) => HomePage()));
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => SignInScreen()));
                   }).onError((error, stackTrace) {
                     print('Error ${error.toString()}');
                   });

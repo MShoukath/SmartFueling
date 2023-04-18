@@ -41,18 +41,19 @@ class _HomePageState extends State<HomePage> {
       Completer<GoogleMapController>();
 
   LatLng currentUserLocation = const LatLng(13.0827, 80.2707);
-
   LatLng fromLocation = const LatLng(13.0827, 80.2707);
   bool fromLocationSelected = false;
   LatLng toLocation = const LatLng(13.0827, 80.2707);
   bool toLocationSelected = false;
 
+  final Set<Polyline> _polylines = Set<Polyline>();
   // Set<Marker> _mapMarkers = {};
 
   setMarkerCallback(
       {LatLng markerPosition = const LatLng(13.0827, 80.2707),
       String markerType = 'from',
-      bool markerVisible = false}) async {
+      bool markerVisible = false,
+      Map<String, dynamic> directionsResponse = const {}}) async {
     setState(() {
       if (markerType == 'from') {
         fromLocation = markerPosition;
@@ -61,15 +62,26 @@ class _HomePageState extends State<HomePage> {
         toLocation = markerPosition;
         toLocationSelected = markerVisible;
       }
+      if (directionsResponse.isNotEmpty) {
+        _polylines.clear();
+        _polylines.add(Polyline(
+            polylineId: const PolylineId('route'),
+            visible: true,
+            points: directionsResponse['polyline_decoded'],
+            width: 3,
+            color: Colors.blue));
+      }
     });
     List<LatLng> markerList = [];
     if (fromLocationSelected) markerList.add(fromLocation);
     if (toLocationSelected) markerList.add(toLocation);
     markerList.add(currentUserLocation);
+    var bounds = directionsResponse.isEmpty
+        ? boundsFromLatLngList(markerList)
+        : directionsResponse['bounds'];
     if (markerList.length > 1) {
       final GoogleMapController controller = await controllerMap.future;
-      controller.animateCamera(
-          CameraUpdate.newLatLngBounds(boundsFromLatLngList(markerList), 110));
+      controller.animateCamera(CameraUpdate.newLatLngBounds(bounds, 110));
     } else {
       moveToUser();
     }
@@ -201,7 +213,8 @@ class _HomePageState extends State<HomePage> {
                   icon: BitmapDescriptor.defaultMarker,
                   visible: toLocationSelected,
                 )
-              }),
+              },
+              polylines: _polylines),
           Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,

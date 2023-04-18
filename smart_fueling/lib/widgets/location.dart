@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:google_place/google_place.dart';
-// import 'package:geocoder/geocoder.dart';
+import '.././services/directions_api.dart';
 import 'package:location_geocoder/location_geocoder.dart';
 
 // ignore: must_be_immutable
@@ -25,8 +25,8 @@ class _LocateState extends State<Locate> {
 
   static const String gapiKey = 'AIzaSyC7bvDC-YbKrrd1Xmwjjd_XIu0SPwkpYrU';
 
-  DetailsResult? fromPosition;
-  DetailsResult? toPosition;
+  dynamic fromPosition;
+  late String toPosition;
 
   bool toTextFieldVisible = false;
   late FocusNode fromFocusNode;
@@ -184,6 +184,8 @@ class _LocateState extends State<Locate> {
                       setState(() {
                         _fromController.text = addresses.first.addressLine!;
                         predictions = [];
+                        fromPosition =
+                            '${widget.userLocation.latitude},${widget.userLocation.longitude}';
                         toTextFieldVisible = true;
                         toFocusNode.requestFocus();
                       });
@@ -209,7 +211,7 @@ class _LocateState extends State<Locate> {
                           mounted) {
                         if (fromFocusNode.hasFocus) {
                           setState(() {
-                            fromPosition = details.result;
+                            fromPosition = 'place_id:$placeId';
                             _fromController.text = details.result!.name!;
                             predictions = [];
                             toTextFieldVisible = true;
@@ -223,17 +225,20 @@ class _LocateState extends State<Locate> {
                               markerVisible: true);
                         } else {
                           setState(() {
-                            toPosition = details.result;
+                            toPosition = 'place_id:$placeId';
                             _toController.text = details.result!.name!;
                             predictions = [];
                             FocusScope.of(context).unfocus();
                           });
+                          Map<String, dynamic> directions = await MapServices()
+                              .getDirections(fromPosition, toPosition);
                           widget.setMarker(
                               markerPosition: LatLng(
                                   details.result!.geometry!.location!.lat!,
                                   details.result!.geometry!.location!.lng!),
                               markerType: 'to',
-                              markerVisible: true);
+                              markerVisible: true,
+                              directionsResponse: directions);
                         }
                       }
                     },
