@@ -21,7 +21,7 @@ class MapServices {
     var response = await http.get(Uri.parse(url));
 
     var json = convert.jsonDecode(response.body);
-
+    print('origin: $origin , destination: $destination');
     var results = {
       'bounds_ne': json['routes'][0]['bounds']['northeast'],
       'bounds_sw': json['routes'][0]['bounds']['southwest'],
@@ -46,7 +46,7 @@ class MapServices {
           .map((e) => LatLng(e.latitude, e.longitude))
           .toList()
     };
-
+    print(results['polyline_decoded']);
     return results;
   }
 }
