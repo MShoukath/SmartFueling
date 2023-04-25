@@ -26,63 +26,83 @@ class _SignUpScreenState extends State<SignUpScreen> {
           Colors.deepPurple,
         ], begin: Alignment.topCenter, end: Alignment.bottomCenter)),
         padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Logo(),
-            const Text(
-              'Sign Up',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
+        child: Form(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Logo(),
+              const Text(
+                'Sign Up',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                ),
               ),
-            ),
-            const SizedBox(
-              height: 10,
-            ),
-            TextField(
-                controller: _userEmail,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.white.withOpacity(0.5),
-                  hintText: 'Email ID',
-                  contentPadding: const EdgeInsets.all(10),
-                  constraints: const BoxConstraints(maxHeight: 50),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                )),
-            const SizedBox(
-              height: 10,
-            ),
-            TextField(
-                obscureText: true,
-                controller: _userPassword,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.white.withOpacity(0.5),
-                  hintText: 'Password',
-                  contentPadding: const EdgeInsets.all(10),
-                  constraints: const BoxConstraints(maxHeight: 50),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                )),
-            ElevatedButton(
-                onPressed: () {
-                  FirebaseAuth.instance
-                      .createUserWithEmailAndPassword(
-                          email: _userEmail.text, password: _userPassword.text)
-                      .then((value) {
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => SignInScreen()));
-                  }).onError((error, stackTrace) {
-                    print('Error ${error.toString()}');
-                  });
-                },
-                child: Text('Sign Up')),
-          ],
+              const SizedBox(
+                height: 10,
+              ),
+              TextFormField(
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  validator: (value) {
+                    if (!RegExp(
+                            r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+")
+                        .hasMatch(value!)) {
+                      return 'Enter Correct email';
+                    }
+                  },
+                  controller: _userEmail,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.5),
+                    hintText: 'Email ID',
+                    contentPadding: const EdgeInsets.all(10),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                  )),
+              const SizedBox(
+                height: 10,
+              ),
+              TextFormField(
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  validator: (value) {
+                    if (value!.length < 6) {
+                      return 'Password must be more than 6 characters';
+                    }
+                  },
+                  obscureText: true,
+                  controller: _userPassword,
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.5),
+                    hintText: 'Password',
+                    contentPadding: const EdgeInsets.all(10),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                  )),
+              ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20))),
+                  onPressed: () async {
+                    try {
+                      await FirebaseAuth.instance
+                          .createUserWithEmailAndPassword(
+                              email: _userEmail.text,
+                              password: _userPassword.text);
+
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => SignInScreen()));
+                    } on FirebaseAuthException catch (e) {
+                      print(e.code);
+                    }
+                  },
+                  child: Text('Sign Up')),
+            ],
+          ),
         ),
       ),
     );
