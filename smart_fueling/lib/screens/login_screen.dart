@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:smartfueling/main.dart';
 import 'package:smartfueling/screens/signup_screen.dart';
@@ -11,6 +12,7 @@ class SignInScreen extends StatefulWidget {
 }
 
 class _SignInScreenState extends State<SignInScreen> {
+  String errorTextVal = '';
   final TextEditingController _userEmail = TextEditingController();
   final TextEditingController _userPassword = TextEditingController();
 
@@ -23,32 +25,42 @@ class _SignInScreenState extends State<SignInScreen> {
           Colors.greenAccent,
           Colors.deepPurple,
         ], begin: Alignment.topCenter, end: Alignment.bottomCenter)),
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Logo(),
-            const Text(
-              'Log In',
-              style: TextStyle(color: Colors.white, fontSize: 20),
-            ),
-            const SizedBox(
-              height: 10,
-            ),
-            TextField(
-                controller: _userEmail,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.white.withOpacity(0.5),
-                  hintText: 'Email ID',
-                  contentPadding: const EdgeInsets.all(10),
-                  constraints: const BoxConstraints(maxHeight: 50),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                )),
-            const SizedBox(height: 10),
-            TextField(
+        padding: const EdgeInsets.all(10.0),
+        child: Form(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox(
+                height: 20,
+              ),
+              const Logo(),
+              const Text(
+                'Log In',
+                style: TextStyle(color: Colors.white, fontSize: 20),
+              ),
+              const SizedBox(
+                height: 10,
+              ),
+              TextFormField(
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.white.withOpacity(0.5),
+                      hintText: 'Email ID',
+                      contentPadding: const EdgeInsets.all(10),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10))),
+                  controller: _userEmail,
+                  validator: (value) {
+                    if (!RegExp(
+                            r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+")
+                        .hasMatch(value!)) {
+                      return 'Enter Correct email';
+                    }
+                  }),
+              const SizedBox(height: 10),
+              TextFormField(
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 obscureText: true,
                 controller: _userPassword,
                 decoration: InputDecoration(
@@ -56,55 +68,61 @@ class _SignInScreenState extends State<SignInScreen> {
                   fillColor: Colors.white.withOpacity(0.5),
                   hintText: 'Password',
                   contentPadding: const EdgeInsets.all(10),
-                  constraints: const BoxConstraints(maxHeight: 50),
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10)),
-                )),
-            ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20))),
-                onPressed: () {
-                  FirebaseAuth.instance
-                      .signInWithEmailAndPassword(
-                          email: _userEmail.text, password: _userPassword.text)
-                      .then((value) {
-                    Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => HomePage(),
-                        ));
-                  }).onError((error, stackTrace) {
-                    print('${error.toString()}');
-                  });
+                ),
+                validator: (value) {
+                  if (value!.length < 6) {
+                    return 'Password must be more than 6 characters';
+                  }
                 },
-                child: Text('Log In')),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  'Dont Have an account?',
-                  style: TextStyle(color: Colors.white),
-                ),
-                const SizedBox(
-                  width: 5,
-                ),
-                GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => SignUpScreen()));
+              ),
+              ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20))),
+                  onPressed: () async {
+                    try {
+                      await FirebaseAuth.instance.signInWithEmailAndPassword(
+                          email: _userEmail.text, password: _userPassword.text);
+                      Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => HomePage(),
+                          ));
+                    } on FirebaseAuthException catch (e) {
+                      if (e.code == 'user-not-found') {
+                      } else if (e.code == 'wrong-password') {}
+                    }
                   },
-                  child: const Text(
-                    'Sign Up',
+                  child: Text('Log In')),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'Dont Have an account?',
                     style: TextStyle(color: Colors.white),
                   ),
-                )
-              ],
-            )
-          ],
+                  const SizedBox(
+                    width: 5,
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => SignUpScreen()));
+                    },
+                    child: const Text(
+                      'Sign Up',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  )
+                ],
+              )
+            ],
+          ),
         ),
       ),
     );
