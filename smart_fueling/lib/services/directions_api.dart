@@ -13,7 +13,6 @@ class LatLng1 {
   LatLng1(this.latitude, this.longitude);
   @override
   String toString() {
-    // TODO: implement toString
     return '$longitude,$latitude';
   }
 }
@@ -33,7 +32,6 @@ class LatLngBounds1 {
 
   @override
   String toString() {
-    // TODO: implement toString
     return '$southwest,$northeast';
   }
 }
@@ -50,7 +48,6 @@ class GasStation {
       required this.placeID});
   @override
   String toString() {
-    // TODO: implement toString
     return 'gas station: $name,$address,$location,$placeID\n';
   }
 }
@@ -269,7 +266,7 @@ class MapServices {
       int segmentSize = (results['distance'] / 15) > 3000
           ? ((results['distance'] / 15) < maxRange * 0.7
               ? (results['distance'] / 15).round()
-              : maxRange * 0.7)
+              : (maxRange * 0.7).round())
           : 3000;
       RouteSegment.segmentSize = segmentSize;
       List<RouteSegment> boxes = [];
@@ -304,7 +301,8 @@ class MapServices {
           }
         }
       }
-
+      print('segment size: $segmentSize');
+      print('no of segments: ${boxes.length}');
       // print('waypoints: $waypoints');
       results = await getRoute(origin, destination + waypoints);
     }

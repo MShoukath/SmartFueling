@@ -45,6 +45,7 @@ class _HomePageState extends State<HomePage> {
   bool fromLocationSelected = false;
   LatLng toLocation = const LatLng(13.0827, 80.2707);
   bool toLocationSelected = false;
+  // late GoogleMapController finalController;
 
   final Set<Polyline> _polylines = {};
   final Set<Marker> _markers = {};
@@ -101,6 +102,7 @@ class _HomePageState extends State<HomePage> {
     if (markerList.length > 1) {
       final GoogleMapController controller = await controllerMap.future;
       controller.animateCamera(CameraUpdate.newLatLngBounds(bounds, 110));
+      controller.dispose();
     } else {
       moveToUser();
     }
@@ -131,6 +133,7 @@ class _HomePageState extends State<HomePage> {
         zoom: 16,
       )));
     });
+    controller.dispose();
   }
 
   Future<void> _enableLocationService() async {
@@ -186,6 +189,13 @@ class _HomePageState extends State<HomePage> {
         currentUserLocation = LatLng(position!.latitude, position.longitude);
       });
     });
+  }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    // finalController.dispose();
+    super.dispose();
   }
 
   @override
