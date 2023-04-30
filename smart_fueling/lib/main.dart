@@ -48,7 +48,8 @@ class _HomePageState extends State<HomePage> {
   LatLng toLocation = const LatLng(13.0827, 80.2707);
   bool toLocationSelected = false;
 
-  final Set<Polyline> _polylines = Set<Polyline>();
+  final Set<Polyline> _polylines = {};
+  final Set<Marker> _markers = {};
   // Set<Marker> _mapMarkers = {};
 
   setMarkerCallback(
@@ -57,21 +58,39 @@ class _HomePageState extends State<HomePage> {
       bool markerVisible = false,
       Map<String, dynamic> directionsResponse = const {}}) async {
     setState(() {
-      if (markerType == 'from') {
-        fromLocation = markerPosition;
-        fromLocationSelected = markerVisible;
-      } else if (markerType == 'to') {
-        toLocation = markerPosition;
-        toLocationSelected = markerVisible;
-      }
       if (directionsResponse.isNotEmpty) {
         _polylines.clear();
         _polylines.add(Polyline(
             polylineId: const PolylineId('route'),
             visible: true,
-            points: directionsResponse['polyline_decoded'],
+            points: directionsResponse['polylineDecoded'],
             width: 3,
             color: Colors.blue));
+        _markers.clear();
+        for (LatLng waypoint in directionsResponse['waypoints']) {
+          _markers.add(Marker(
+              markerId: MarkerId(waypoint.toString()),
+              position: waypoint,
+              icon: BitmapDescriptor.defaultMarkerWithHue(
+                  BitmapDescriptor.hueRed)));
+        }
+      } else if (markerType == 'from') {
+        fromLocation = markerPosition;
+        fromLocationSelected = markerVisible;
+        _markers.clear();
+        _markers.add(Marker(
+            markerId: const MarkerId('from'),
+            position: fromLocation,
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+                BitmapDescriptor.hueRed)));
+      } else if (markerType == 'to') {
+        toLocation = markerPosition;
+        toLocationSelected = markerVisible;
+        _markers.add(Marker(
+            markerId: const MarkerId('to'),
+            position: toLocation,
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+                BitmapDescriptor.hueRed)));
       }
     });
     List<LatLng> markerList = [];
@@ -198,27 +217,7 @@ class _HomePageState extends State<HomePage> {
               ),
               onMapCreated: (controller) =>
                   {controllerMap.complete(controller)},
-              markers: {
-                Marker(
-                  markerId: const MarkerId('currentLocation'),
-                  position: currentUserLocation,
-                  icon: BitmapDescriptor.defaultMarkerWithHue(
-                      BitmapDescriptor.hueBlue),
-                  visible: false,
-                ),
-                Marker(
-                  markerId: const MarkerId('fromLocation'),
-                  position: fromLocation,
-                  icon: BitmapDescriptor.defaultMarker,
-                  visible: fromLocationSelected,
-                ),
-                Marker(
-                  markerId: const MarkerId('toLocation'),
-                  position: toLocation,
-                  icon: BitmapDescriptor.defaultMarker,
-                  visible: toLocationSelected,
-                )
-              },
+              markers: _markers,
               polylines: _polylines),
           Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:google_place/google_place.dart';
-import '.././services/directions_api.dart';
+import '.././services/directions_api.dart' hide LatLng1, LatLngBounds1;
 import 'package:location_geocoder/location_geocoder.dart';
 
 // ignore: must_be_immutable
@@ -231,11 +231,10 @@ class _LocateState extends State<Locate> {
                             FocusScope.of(context).unfocus();
                           });
                           Map<String, dynamic> directions = await MapServices()
-                              .getDirections(fromPosition, toPosition);
+                              .getDirections(
+                                  fromPosition, toPosition, 10000, 20000);
                           widget.setMarker(
-                              markerPosition: LatLng(
-                                  details.result!.geometry!.location!.lat!,
-                                  details.result!.geometry!.location!.lng!),
+                              markerPosition: directions['endLocation'],
                               markerType: 'to',
                               markerVisible: true,
                               directionsResponse: directions);
