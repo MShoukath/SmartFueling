@@ -5,6 +5,8 @@ import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:smartfueling/screens/login_screen.dart';
+import 'package:smartfueling/screens/signup_screen.dart';
+import 'package:smartfueling/screens/user_profile.dart';
 import './widgets/location.dart';
 import './widgets/metrics.dart';
 
@@ -177,7 +179,10 @@ class _HomePageState extends State<HomePage> {
           title: const Text('Smart Fueling'),
           actions: [
             IconButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.pushReplacement(context,
+                      MaterialPageRoute(builder: (context) => UserProfile()));
+                },
                 icon: const Icon(Icons.account_circle_rounded))
           ],
         ),
@@ -223,7 +228,7 @@ class _HomePageState extends State<HomePage> {
                 setMarker: setMarkerCallback,
                 userLocation: currentUserLocation,
               ),
-              const Metrics(),
+              Metrics(),
             ],
           )
         ]),
