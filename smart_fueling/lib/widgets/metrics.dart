@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
 
 class Metrics extends StatefulWidget {
   const Metrics({super.key});
@@ -8,7 +10,18 @@ class Metrics extends StatefulWidget {
 }
 
 class _MetricsState extends State<Metrics> {
-  @override
+  String fuelLeft = '0';
+
+  Widget fuelLevel() {
+    DatabaseReference ref = FirebaseDatabase.instance.ref("Sensor/distance");
+    ref.onValue.listen((event) {
+      setState(() {
+        fuelLeft = event.snapshot.value.toString();
+      });
+    });
+    return Text(" Ltrs:$fuelLeft");
+  }
+
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(0, 10, 0, 0),
@@ -17,20 +30,37 @@ class _MetricsState extends State<Metrics> {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Column(children: const [
+            Column(children: [
               SizedBox(height: 5),
-              Icon(Icons.route_outlined),
-              Text('Estimated Range'),
-              Text('0.0'),
-              SizedBox(
-                height: 5,
+              Row(
+                children: [
+                  Icon(Icons.route_outlined),
+                  Text('0.0'),
+                ],
               ),
-            ]),
-            Column(children: const [
+              Text('Estimated Range'),
               SizedBox(height: 5),
-              Icon(Icons.local_gas_station_outlined),
-              Text('Mileage'),
-              Text('0.0'),
+            ]),
+            Column(children: [
+              SizedBox(height: 5),
+              Row(
+                children: [
+                  Icon(Icons.local_gas_station_outlined),
+                  FutureBuilder(
+                      future: Firebase.initializeApp(),
+                      builder: ((BuildContext context, snapshot) {
+                        print(snapshot);
+                        if (snapshot.hasError) {
+                          return Text("Error");
+                        } else if (snapshot.hasData) {
+                          return fuelLevel();
+                        } else {
+                          return CircularProgressIndicator();
+                        }
+                      })),
+                ],
+              ),
+              const Text('Fuel Level'),
               SizedBox(height: 5),
             ])
           ],
