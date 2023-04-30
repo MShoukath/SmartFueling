@@ -46,18 +46,18 @@ class _MetricsState extends State<Metrics> {
               Row(
                 children: [
                   Icon(Icons.local_gas_station_outlined),
-                  // FutureBuilder(
-                  //     future: Firebase.initializeApp(),
-                  //     builder: ((BuildContext context, snapshot) {
-                  //       print(snapshot);
-                  //       if (snapshot.hasError) {
-                  //         return Text("Error");
-                  //       } else if (snapshot.hasData) {
-                  //         return fuelLevel();
-                  //       } else {
-                  //         return CircularProgressIndicator();
-                  //       }
-                  //     })),
+                  FutureBuilder(
+                      future: Firebase.initializeApp(),
+                      builder: ((BuildContext context, snapshot) {
+                        print(snapshot);
+                        if (snapshot.hasError) {
+                          return Text("Error");
+                        } else if (snapshot.hasData) {
+                          return fuelLevel();
+                        } else {
+                          return CircularProgressIndicator();
+                        }
+                      })),
                 ],
               ),
               const Text('Fuel Level'),
