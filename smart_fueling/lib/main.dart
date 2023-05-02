@@ -1,11 +1,11 @@
-import 'package:firebase_auth/firebase_auth.dart';
+// import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:smartfueling/screens/login_screen.dart';
-import 'package:smartfueling/screens/signup_screen.dart';
+// import 'package:smartfueling/screens/signup_screen.dart';
 import 'package:smartfueling/screens/user_profile.dart';
 import './widgets/location.dart';
 import './widgets/metrics.dart';
@@ -58,6 +58,7 @@ class _HomePageState extends State<HomePage> {
       String markerType = 'from',
       bool markerVisible = false,
       Map<String, dynamic> directionsResponse = const {}}) async {
+    print('hi');
     setState(() {
       if (directionsResponse.isNotEmpty) {
         _polylines.clear();
@@ -68,10 +69,21 @@ class _HomePageState extends State<HomePage> {
             width: 3,
             color: Colors.blue));
         _markers.clear();
-        for (LatLng waypoint in directionsResponse['waypoints']) {
+        _markers.add(Marker(
+            markerId: const MarkerId('from'),
+            position: directionsResponse['waypoints'][0],
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+                BitmapDescriptor.hueViolet)));
+        for (int i = 1; i < directionsResponse['waypoints'].length - 1; i++) {
           _markers.add(Marker(
-              markerId: MarkerId(waypoint.toString()),
-              position: waypoint,
+              markerId: MarkerId(directionsResponse['waypoints'][i].toString()),
+              position: directionsResponse['waypoints'][i],
+              icon: BitmapDescriptor.defaultMarkerWithHue(
+                  BitmapDescriptor.hueGreen)));
+          _markers.add(Marker(
+              markerId: const MarkerId('to'),
+              position: directionsResponse['waypoints']
+                  [directionsResponse['waypoints'].length - 1],
               icon: BitmapDescriptor.defaultMarkerWithHue(
                   BitmapDescriptor.hueRed)));
         }
@@ -79,19 +91,21 @@ class _HomePageState extends State<HomePage> {
         fromLocation = markerPosition;
         fromLocationSelected = markerVisible;
         _markers.clear();
+        _polylines.clear();
         _markers.add(Marker(
             markerId: const MarkerId('from'),
             position: fromLocation,
+            visible: markerVisible,
             icon: BitmapDescriptor.defaultMarkerWithHue(
-                BitmapDescriptor.hueRed)));
+                BitmapDescriptor.hueViolet)));
       } else if (markerType == 'to') {
         toLocation = markerPosition;
         toLocationSelected = markerVisible;
-        _markers.add(Marker(
-            markerId: const MarkerId('to'),
-            position: toLocation,
-            icon: BitmapDescriptor.defaultMarkerWithHue(
-                BitmapDescriptor.hueRed)));
+        _polylines.clear();
+        var fromMarker = _markers.firstWhere(
+            (element) => element.markerId == const MarkerId('from'));
+        _markers.clear();
+        _markers.add(fromMarker);
       }
     });
     List<LatLng> markerList = [];
@@ -209,7 +223,7 @@ class _HomePageState extends State<HomePage> {
           actions: [
             IconButton(
                 onPressed: () {
-                  Navigator.pushReplacement(context,
+                  Navigator.push(context,
                       MaterialPageRoute(builder: (context) => UserProfile()));
                 },
                 icon: const Icon(Icons.account_circle_rounded))
