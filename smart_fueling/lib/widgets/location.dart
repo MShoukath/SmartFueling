@@ -180,6 +180,7 @@ class _LocateState extends State<Locate> {
                           .findAddressesFromCoordinates(Coordinates(
                               widget.userLocation.latitude,
                               widget.userLocation.longitude));
+                      print('addresses: $addresses');
                       // var first = addresses.first;
                       setState(() {
                         _fromController.text = addresses.first.addressLine!;
@@ -230,68 +231,41 @@ class _LocateState extends State<Locate> {
                             predictions = [];
                             FocusScope.of(context).unfocus();
                           });
-                          Navigator.of(context)
-                              .push(MaterialPageRoute(builder: (context) {
-                            return Dialog(
-                              // The background color
-                              backgroundColor: Colors.white,
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 20),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: const [
-                                    // The loading indicator
-                                    CircularProgressIndicator(),
-                                    SizedBox(
-                                      height: 15,
-                                    ),
-                                    // Some text
-                                    Text('Loading...')
-                                  ],
-                                ),
-                              ),
-                            );
-                          }));
-                          try {
-                            Map<String, dynamic> directions =
-                                await MapServices().getDirections(
-                                    fromPosition, toPosition, 30000, 60000);
-                            print(directions);
-                            widget.setMarker(
-                                markerPosition: directions['endLocation'],
-                                markerType: 'to',
-                                markerVisible: true,
-                                directionsResponse: directions);
-                            Navigator.of(context).pushReplacement(
-                                MaterialPageRoute(builder: (context) {
-                              return Scaffold(
-                                  body: AlertDialog(
-                                title: Text('${directions['status']}'),
-                                content: Text('''
+                          showDialog(
+                              barrierDismissible: false,
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                  // The background color
+                                  backgroundColor: Colors.white,
+                                  title: Text('Loading...'),
+                                  content: Container(
+                                      height: 100,
+                                      width: 100,
+                                      child: const Center(
+                                          child:
+                                              CircularProgressIndicator()))));
+                          // try {
+                          Map<String, dynamic> directions = await MapServices()
+                              .getDirections(
+                                  fromPosition, toPosition, 30000, 100000);
+                          print(directions);
+                          widget.setMarker(directionsResponse: directions);
+                          Navigator.pop(context);
+                          showDialog(
+                              barrierDismissible: false,
+                              context: context,
+                              builder: (context) {
+                                return AlertDialog(
+                                  title: Text('${directions['status']}'),
+                                  content: Text('''
 Total Fuel Stops : ${directions['Fuel Stop Count'] ?? 0}
-Travel Distance: ${directions['distance'] ?? 0}
+Travel Distance: ${directions['distance'] ?? 0}Km
 Travel Time: ${directions['duration'] ?? 0}
-Initial Travel Distance: ${directions['orignalDistance'] ?? 0} 
-Initial Travel time: ${directions['orignalDuration'] ?? 0}                  
+Initial Travel Distance: ${directions['orignalDistance'] ?? 0}Km
+Initial Travel time: ${directions['orignalDuration'] ?? 0}
+current vehicle range: 30Km       
+vehicle range on full fuel tank: 100Km           
  '''),
-                                actions: [
-                                  TextButton(
-                                      onPressed: () {
-                                        Navigator.of(context).pop();
-                                      },
-                                      child: const Text('OK'))
-                                ],
-                              ));
-                            }));
-                          } catch (e) {
-                            Navigator.of(context).pushReplacement(
-                                MaterialPageRoute(builder: (context) {
-                              return Scaffold(
-                                body: AlertDialog(
-                                  title: Text('Error'),
-                                  content: Text(
-                                      'An exception $e occured while getting directions. Please try again later.'),
                                   actions: [
                                     TextButton(
                                         onPressed: () {
@@ -299,10 +273,25 @@ Initial Travel time: ${directions['orignalDuration'] ?? 0}
                                         },
                                         child: const Text('OK'))
                                   ],
-                                ),
-                              );
-                            }));
-                          } finally {}
+                                );
+                              });
+                          // } catch (e) {
+                          //   Navigator.pop(context);
+                          //   showDialog(
+                          //       context: context,
+                          //       builder: (context) => AlertDialog(
+                          //             title: Text('Error'),
+                          //             content: Text(
+                          //                 'An exception $e occured while getting directions. Please try again later.'),
+                          //             actions: [
+                          //               TextButton(
+                          //                   onPressed: () {
+                          //                     Navigator.of(context).pop();
+                          //                   },
+                          //                   child: const Text('OK'))
+                          //             ],
+                          //           ));
+                          // } finally {}
                         }
                       }
                     },

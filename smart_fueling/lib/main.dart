@@ -7,6 +7,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:smartfueling/screens/login_screen.dart';
 // import 'package:smartfueling/screens/signup_screen.dart';
 import 'package:smartfueling/screens/user_profile.dart';
+import 'package:smartfueling/services/directions_api.dart';
 import './widgets/location.dart';
 import './widgets/metrics.dart';
 
@@ -23,7 +24,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Smart Fueling',
-      home: SignInScreen(),
+      home: HomePage(),
       theme: ThemeData(
         primarySwatch: Colors.deepPurple,
       ),
@@ -52,13 +53,16 @@ class _HomePageState extends State<HomePage> {
   final Set<Polyline> _polylines = {};
   final Set<Marker> _markers = {};
   // Set<Marker> _mapMarkers = {};
+  Widget gasList = const SizedBox(
+    height: 0,
+  );
 
   setMarkerCallback(
       {LatLng markerPosition = const LatLng(13.0827, 80.2707),
       String markerType = 'from',
       bool markerVisible = false,
       Map<String, dynamic> directionsResponse = const {}}) async {
-    print('hi');
+    // print('hi');
     setState(() {
       if (directionsResponse.isNotEmpty) {
         _polylines.clear();
@@ -71,7 +75,7 @@ class _HomePageState extends State<HomePage> {
         _markers.clear();
         _markers.add(Marker(
             markerId: const MarkerId('from'),
-            position: directionsResponse['waypoints'][0],
+            position: directionsResponse['startLocation'],
             icon: BitmapDescriptor.defaultMarkerWithHue(
                 BitmapDescriptor.hueViolet)));
         for (int i = 1; i < directionsResponse['waypoints'].length - 1; i++) {
@@ -80,13 +84,76 @@ class _HomePageState extends State<HomePage> {
               position: directionsResponse['waypoints'][i],
               icon: BitmapDescriptor.defaultMarkerWithHue(
                   BitmapDescriptor.hueGreen)));
-          _markers.add(Marker(
-              markerId: const MarkerId('to'),
-              position: directionsResponse['waypoints']
-                  [directionsResponse['waypoints'].length - 1],
-              icon: BitmapDescriptor.defaultMarkerWithHue(
-                  BitmapDescriptor.hueRed)));
         }
+        _markers.add(Marker(
+            markerId: const MarkerId('to'),
+            position: directionsResponse['endLocation'],
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+                BitmapDescriptor.hueRed)));
+
+        gasList = directionsResponse['gasStations'] != null
+            ? Container(
+                height: MediaQuery.of(context).size.height * 0.5,
+                child: DraggableScrollableSheet(
+                    // expand: false,
+                    initialChildSize: 0.14,
+                    minChildSize: 0.14,
+                    maxChildSize: (0.14 * (_markers.length)) > 1
+                        ? 0.5
+                        : 0.14 * (_markers.length),
+                    builder: ((context, scrollController) {
+                      return Container(
+                        color: Colors.white,
+                        child: ListView.builder(
+                            itemCount:
+                                directionsResponse['gasStations'].length + 1,
+                            controller: scrollController,
+                            physics: const ClampingScrollPhysics(),
+                            itemBuilder: (context, index) {
+                              if (index == 0) {
+                                return Column(children: [
+                                  const SizedBox(
+                                    width: 50.0,
+                                    child: Divider(
+                                      thickness: 5,
+                                    ),
+                                  ),
+                                  Text(
+                                      'Travel Distance: ${directionsResponse['distance']}Km\nTravel Time: ${directionsResponse['duration']}',
+                                      style: const TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold)),
+                                ]);
+                              } else {
+                                return Card(
+                                  // color: Colors.grey[200],
+                                  child: ListTile(
+                                    // contentPadding: EdgeInsets.only(bottom: 10.0),
+                                    // tileColor: Colors.grey[200],
+                                    leading: const Icon(
+                                      Icons.local_gas_station_outlined,
+                                      color: Colors.green,
+                                    ),
+                                    title: Text(
+                                        directionsResponse['gasStations']
+                                                [index - 1]
+                                            .name),
+                                    subtitle: Text(
+                                        directionsResponse['gasStations']
+                                                [index - 1]
+                                            .address),
+                                    trailing: Text(
+                                        '${(directionsResponse['gasStations'][index - 1].toDistance / 1000).round()}Km'),
+                                  ),
+                                );
+                              }
+                            }),
+                      );
+                    })),
+              )
+            : SizedBox(
+                height: 0,
+              );
       } else if (markerType == 'from') {
         fromLocation = markerPosition;
         fromLocationSelected = markerVisible;
@@ -98,6 +165,9 @@ class _HomePageState extends State<HomePage> {
             visible: markerVisible,
             icon: BitmapDescriptor.defaultMarkerWithHue(
                 BitmapDescriptor.hueViolet)));
+        gasList = const SizedBox(
+          height: 0,
+        );
       } else if (markerType == 'to') {
         toLocation = markerPosition;
         toLocationSelected = markerVisible;
@@ -106,6 +176,9 @@ class _HomePageState extends State<HomePage> {
             (element) => element.markerId == const MarkerId('from'));
         _markers.clear();
         _markers.add(fromMarker);
+        gasList = const SizedBox(
+          height: 0,
+        );
       }
     });
     List<LatLng> markerList = [];
@@ -251,21 +324,30 @@ class _HomePageState extends State<HomePage> {
                 setMarker: setMarkerCallback,
                 userLocation: currentUserLocation,
               ),
-              Metrics(),
+              Column(
+                children: [
+                  gasList,
+                  Metrics(),
+                ],
+              ),
             ],
           )
         ]),
-        floatingActionButton: Padding(
-          padding: const EdgeInsets.fromLTRB(0.0, 0.0, 0.0, 60.0),
-          child: FloatingActionButton(
-            tooltip: 'Get Current Location',
-            elevation: 8,
-            onPressed: () {
-              moveToUser();
-            },
-            child: const Icon(Icons.my_location_outlined),
-          ),
-        ));
+        floatingActionButton: _polylines.isEmpty
+            ? Padding(
+                padding: const EdgeInsets.fromLTRB(0.0, 0.0, 0.0, 60.0),
+                child: FloatingActionButton(
+                  tooltip: 'Get Current Location',
+                  elevation: 8,
+                  onPressed: () {
+                    moveToUser();
+                  },
+                  child: const Icon(Icons.my_location_outlined),
+                ),
+              )
+            : const SizedBox(
+                height: 0,
+              ));
   }
 }
 
