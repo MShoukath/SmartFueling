@@ -1,7 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:smartfueling/main.dart';
 import 'package:smartfueling/screens/login_screen.dart';
+import 'package:smartfueling/widgets/trip.dart';
 
 class UserProfile extends StatefulWidget {
   const UserProfile({super.key});
@@ -13,12 +15,15 @@ class UserProfile extends StatefulWidget {
 class _UserProfileState extends State<UserProfile> {
   var name = " ";
   var email = " ";
+  var userid = " ";
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
+
     if (user != null) {
       name = user.displayName.toString();
       email = user.email.toString();
+      userid = user.uid;
     }
     return Scaffold(
       appBar: AppBar(
@@ -52,9 +57,25 @@ class _UserProfileState extends State<UserProfile> {
             ),
             SizedBox(height: 10),
             ElevatedButton.icon(
-                onPressed: () {},
+                onPressed: () {
+                  FirebaseAuth.instance.signOut();
+                  Navigator.pushReplacement(context,
+                      MaterialPageRoute(builder: (context) => SignInScreen()));
+                },
                 icon: Icon(Icons.logout_outlined),
-                label: Text('Logout'))
+                label: Text('Logout')),
+            SizedBox(
+              height: 10,
+            ),
+            Card(
+                elevation: 6,
+                child: Column(children: [
+                  Text(
+                    'History of Trips',
+                    style: TextStyle(fontSize: 20),
+                  ),
+                  Trip()
+                ])),
           ],
         ),
       ),
