@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -12,17 +14,21 @@ class Metrics extends StatefulWidget {
 
 class _MetricsState extends State<Metrics> {
   String fuelLeft = '0';
+  Timer? _debounce;
   int mileage = 0;
   int range = 0;
 
   Widget fuelLevel() {
-    DatabaseReference ref = FirebaseDatabase.instance.ref("Sensor/FuelLevel");
-    ref.onValue.listen((event) {
-      setState(() {
-        fuelLeft = event.snapshot.value.toString();
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 3000), () {
+      DatabaseReference ref = FirebaseDatabase.instance.ref("Sensor/FuelLevel");
+      ref.onValue.listen((event) {
+        setState(() {
+          fuelLeft = event.snapshot.value.toString();
+        });
       });
     });
-    return Text(" Ltrs:$fuelLeft");
+    return Text("$fuelLeft L");
   }
 
   Widget build(BuildContext context) {
@@ -38,7 +44,7 @@ class _MetricsState extends State<Metrics> {
               Row(
                 children: [
                   Icon(Icons.route_outlined),
-                  Text('0.0'),
+                  Text('10 Km'),
                 ],
               ),
               Text('Estimated Range'),

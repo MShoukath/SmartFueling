@@ -7,6 +7,8 @@ import 'package:smartfueling/screens/signup_screen.dart';
 import 'package:smartfueling/widgets/logo.dart';
 
 class SignInScreen extends StatefulWidget {
+  const SignInScreen({super.key});
+
   @override
   State<SignInScreen> createState() => _SignInScreenState();
 }
@@ -96,7 +98,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       } else if (e.code == 'wrong-password') {}
                     }
                   },
-                  child: Text('Log In')),
+                  child: const Text('Log In')),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -112,7 +114,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => SignUpScreen()));
+                              builder: (context) => const SignUpScreen()));
                     },
                     child: const Text(
                       'Sign Up',

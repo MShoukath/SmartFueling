@@ -13,7 +13,6 @@ class LatLng1 {
   LatLng1(this.latitude, this.longitude);
   @override
   String toString() {
-    // TODO: implement toString
     return '$longitude,$latitude';
   }
 }
@@ -33,7 +32,6 @@ class LatLngBounds1 {
 
   @override
   String toString() {
-    // TODO: implement toString
     return '$southwest,$northeast';
   }
 }
@@ -43,6 +41,10 @@ class GasStation {
   String address;
   LatLng1 location;
   String placeID;
+  int fromDistance = 0;
+  int toDistance = 0;
+  int toDuration = 0;
+  int fromDuration = 0;
   GasStation(
       {required this.name,
       required this.address,
@@ -50,8 +52,7 @@ class GasStation {
       required this.placeID});
   @override
   String toString() {
-    // TODO: implement toString
-    return 'gas station: $name,$address,$location,$placeID\n';
+    return 'gas station: $name,toDistance:$toDistance, total distance: ${toDistance + fromDistance}, total duration: ${fromDuration + toDuration}\n';
   }
 }
 
@@ -168,25 +169,29 @@ class RouteSegment {
 }
 
 class MapServices {
-  final String key = 'AIzaSyC7bvDC-YbKrrd1Xmwjjd_XIu0SPwkpYrU';
+  final String key = 'AIzaSyBnH_1dS8lyzat1tGHbSpil3RnpvWMNiDM';
   // final String types = 'geocode';
 
-  Future<List<GasStation>> getNearbyGasStation(
-      LatLngBounds1 box, int segmentSize) async {
+  Future<Map<String, dynamic>> getNearbyGasStation(
+      RouteSegment box, int segmentSize) async {
     // const String type = 'gas_station';
-    const String rankby = 'prominence';
+    const String rankby = 'distance';
     const String language = 'en';
     const String opennow = 'true';
-    const String keyword = 'petrol';
+    const String keyword = 'gas';
     final String location =
-        '${(box.northeast.latitude + box.southwest.latitude) / 2},${(box.northeast.longitude + box.southwest.longitude) / 2}';
-    final String radius = '${segmentSize * 0.75}';
+        '${box.points[box.points.length ~/ 7].latitude},${box.points[box.points.length ~/ 7].longitude}';
+    // final String radius = '${segmentSize * 2}';
     final String url =
-        'https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=$location&radius=$radius&key=$key&rankby=$rankby&language=$language&opennow=$opennow&keyword=$keyword';
+        'https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=$location&key=$key&rankby=$rankby&language=$language&opennow=$opennow&keyword=$keyword';
     var response = await http.get(Uri.parse(url));
+    print('url: $url');
     var json = convert.jsonDecode(response.body);
     // print(response.body);
-    List<GasStation> results = List.from(json['results'].map((element) {
+    json['results'] = json['results'].take(10).toList();
+    String gasStationWaypoints = '';
+    List<GasStation> gasStations = List.from(json['results'].map((element) {
+      gasStationWaypoints += 'place_id:${element['place_id']}|';
       return GasStation(
           name: element['name'],
           address: element['vicinity'],
@@ -194,8 +199,47 @@ class MapServices {
               element['geometry']['location']['lng']),
           placeID: 'place_id:${element['place_id']}');
     }));
-
+    var results = {
+      'gasStations': gasStations,
+      'waypoints':
+          gasStationWaypoints.substring(0, gasStationWaypoints.length - 1),
+    };
     // print('gas stations: ${results['gas stations']}');
+    return results;
+  }
+
+  Future<Map<String, dynamic>> getDistanceMatrix(
+      String origins, String destinations) async {
+    const String mode = 'driving';
+    const String language = 'en';
+    const String units = 'metric';
+    const String departureTime = 'now';
+    // const String trafficModel = 'best_guess';
+    String url =
+        'https://maps.googleapis.com/maps/api/distancematrix/json?origins=$origins&destinations=$destinations&key=$key&mode=$mode&language=$language&units=$units&departure_time=$departureTime';
+    print('url: $url');
+    var response = await http.get(Uri.parse(url));
+    var json = convert.jsonDecode(response.body);
+    // print(response.body);
+    var results = {
+      'origins': json['origin_addresses'],
+      'destinations': json['destination_addresses'],
+      'distances': json['rows'].map((row) {
+        if (row['elements'] != null)
+          return row['elements'].map((element) {
+            if (element['distance'] != null)
+              return element['distance']['value'];
+          }).toList();
+      }).toList(),
+      'durations': json['rows'].map((row) {
+        if (row['elements'] != null)
+          return row['elements'].map((element) {
+            if (element['duration_in_traffic'] != null)
+              return element['duration_in_traffic']['value'];
+          }).toList();
+      }).toList(),
+    };
+    // print(results);
     return results;
   }
 
@@ -212,10 +256,18 @@ class MapServices {
         'https://maps.googleapis.com/maps/api/directions/json?origin=$origin&destination=$destination&key=$key&mode=$mode&language=$language&units=$units&departure_time=$departureTime&traffic_model=$trafficModel';
     print(Uri.parse(url));
     var response = await http.get(Uri.parse(url));
+    if (response.statusCode != 200) {
+      return {
+        'status': 'Route Retrieval Failed',
+        'error': response.body,
+      };
+    }
 
     var json = convert.jsonDecode(response.body);
     // print(json['geocoded_waypoints'].length);
     var results = {
+      'status': 'Route Retrieval Successfull',
+      'Fuel Stop Count': json['geocoded_waypoints'].length - 2,
       'bounds': LatLngBounds(
           northeast: LatLng(
             json['routes'][0]['bounds']['northeast']['lat'],
@@ -261,52 +313,146 @@ class MapServices {
   Future<Map<String, dynamic>> getDirections(
       String origin, String destination, int currentRange, int maxRange) async {
     Map<String, dynamic> results = await getRoute(origin, destination);
-    List<LatLng1> polylines = List.from(results['polylineDecoded'].map(
-      (point) => LatLng1(point.latitude, point.longitude),
-    ));
+    List<LatLng1> polylines = List.from(results['polylineDecoded'].map((e) {
+      return LatLng1(e.latitude, e.longitude);
+    }));
+    // print(results);
 
     if (results['distance'] as int > currentRange) {
-      int segmentSize = (results['distance'] / 15) > 3000
-          ? ((results['distance'] / 15) < maxRange * 0.7
-              ? (results['distance'] / 15).round()
-              : maxRange * 0.7)
+      int segmentSize = (results['distance'] / 50) > 3000
+          ? ((results['distance'] / 50) < (12000)
+              ? (results['distance'] / 50).round()
+              : (12000))
           : 3000;
       RouteSegment.segmentSize = segmentSize;
       List<RouteSegment> boxes = [];
       RouteSegment currentBox = RouteSegment(startPoint: polylines.first);
-
+      String boxWaypoints = '';
+      Map<String, dynamic> boxResults = {
+        'origins': [],
+        'destinations': [],
+        'distances': [[]],
+        'durations': [[]]
+      };
+      int boxCount = 0;
       for (final LatLng1 point in polylines) {
         if (currentBox.extend(point)) {
           continue;
         } else {
           boxes.add(currentBox);
+          // print('Box ${boxes.length} ${currentBox.bounds}');
+          boxWaypoints +=
+              '${currentBox.endPoint.latitude},${currentBox.endPoint.longitude}|';
+          boxCount++;
+          if (boxCount == 25) {
+            var bresults = await getDistanceMatrix(origin, boxWaypoints);
+            boxResults['origins'] = boxResults['origins'] + bresults['origins'];
+            boxResults['destinations'] =
+                boxResults['destinations'] + bresults['destinations'];
+            boxResults['distances'][0] =
+                boxResults['distances'][0] + bresults['distances'][0];
+            boxResults['durations'][0] =
+                boxResults['durations'][0] + bresults['durations'][0];
+            boxCount = 0;
+            boxWaypoints = '';
+          }
           currentBox = RouteSegment(
               startPoint: RouteSegment.getSeed(currentBox.bounds, point));
+          assert(currentBox.extend(point),
+              'Point extend failed ${RouteSegment.calculateDistance(currentBox.endPoint, point)}\n ${currentBox.endPoint} \n $point \n ${boxes[boxes.length - 2].bounds}}');
         }
       }
       boxes.add(currentBox);
+      boxWaypoints +=
+          '${currentBox.endPoint.latitude},${currentBox.endPoint.longitude}';
+      var bresults = await getDistanceMatrix(origin, boxWaypoints);
+      boxResults['origins'] = boxResults['origins'] + bresults['origins'];
+      boxResults['destinations'] =
+          boxResults['destinations'] + bresults['destinations'];
+      boxResults['distances'][0] =
+          boxResults['distances'][0] + bresults['distances'][0];
+      boxResults['durations'][0] =
+          boxResults['durations'][0] + bresults['durations'][0];
+      boxCount = 0;
+      boxWaypoints = '';
+      print(boxResults['distances'][0]);
+      print('boxes: ${boxes.length}, segmentSize: $segmentSize');
 
       String waypoints = '&waypoints=optimize:true';
-      for (RouteSegment box in boxes) {
-        Map<String, dynamic> boxRoute = await getRoute(
-            origin, '${box.endPoint.latitude},${box.endPoint.longitude}');
-        int distCovered = boxRoute['distance'];
-        if (distCovered < (currentRange - segmentSize)) {
+      // var boxResults = await getDistanceMatrix(origin, boxWaypoints);
+      bool backtrack = false;
+      for (int box = 0; box < boxes.length;) {
+        int distCovered = boxResults['distances'][0][box];
+        if ((distCovered < currentRange) && !backtrack) {
+          // print('current box: $box, dist covered: $distCovered');
+          box++;
           continue;
         } else {
-          List<GasStation> gasStations =
-              await getNearbyGasStation(box.bounds, segmentSize);
-          // print(gasStations);
-          if (gasStations.isNotEmpty) {
-            waypoints += '|${gasStations.first.placeID}';
-            currentRange = distCovered + maxRange;
-            box.refueled = true;
+          var gasStationsResponse =
+              await getNearbyGasStation(boxes[box], segmentSize);
+          List<GasStation> gasStations = gasStationsResponse['gasStations'];
+          if (gasStations.isEmpty) {
+            box--;
+            backtrack = true;
+            print(
+                'no gas stations found, backtracking to $box, current range: $currentRange, dist covered: $distCovered, segment size: $segmentSize');
+            if (box < 0 || boxes[box].refueled) {
+              return {'status': 'Route not possible'};
+            }
+            continue;
           }
+          String gasStationWaypoints = gasStationsResponse['waypoints'];
+          var gasResults = await getDistanceMatrix(origin, gasStationWaypoints);
+          gasStationWaypoints = '';
+          for (int i = 0; i < gasStations.length && i < 10; i++) {
+            gasStations[i].toDistance = gasResults['distances'][0][i] ?? 0;
+            gasStations[i].toDuration = gasResults['durations'][0][i] ?? 0;
+            gasStationWaypoints += gasResults['distances'][0][i] < currentRange
+                ? '${gasStations[i].placeID}|'
+                : '';
+          }
+          // print(gasStations);
+          gasStations = gasStations
+              .where((element) =>
+                  element.toDistance < currentRange && element.toDistance > 0)
+              .toList();
+          if (gasStations.isEmpty) {
+            box--;
+            backtrack = true;
+            print(
+                'backtrack to box $box, currentRange $currentRange, dist $distCovered, segmentSize $segmentSize');
+            if (box < 0 || boxes[box].refueled) {
+              return {'status': 'Route not possible'};
+            }
+            continue;
+          }
+          var gasStationResults =
+              await getDistanceMatrix(gasStationWaypoints, destination);
+          for (int i = 0; i < gasStations.length; i++) {
+            gasStations[i].fromDistance = gasStationResults['distances'][i][0];
+            gasStations[i].fromDuration = gasStationResults['durations'][i][0];
+          }
+          gasStations.sort((a, b) => ((a.toDuration + a.fromDuration) *
+                  (1 + (1 / a.toDistance)))
+              .compareTo(
+                  (b.toDuration + b.fromDuration) * (1 + (1 / b.toDistance))));
+          // print(gasStations);
+          waypoints += '|${gasStations.first.placeID}';
+          currentRange = gasStations.first.toDistance + maxRange;
+          boxes[box].refueled = true;
+          print(
+              'box $box out of ${boxes.length} was refueled, currentRange $currentRange, dist $distCovered');
+          box++;
+          backtrack = false;
         }
       }
-
       // print('waypoints: $waypoints');
-      results = await getRoute(origin, destination + waypoints);
+      var nresults = await getRoute(origin, destination + waypoints);
+      nresults.addAll({
+        'orignalDistance': results['distance'],
+        'orignalDuration': results['duration'],
+      });
+      return nresults;
     }
     return results;
   }

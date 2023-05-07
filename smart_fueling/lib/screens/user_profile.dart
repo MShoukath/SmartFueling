@@ -29,11 +29,7 @@ class _UserProfileState extends State<UserProfile> {
       appBar: AppBar(
         leading: IconButton(
           onPressed: () {
-            Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => HomePage(),
-                ));
+            Navigator.pop(context);
           },
           icon: const Icon(Icons.navigate_before),
         ),
