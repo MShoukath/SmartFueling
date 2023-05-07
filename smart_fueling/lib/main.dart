@@ -7,6 +7,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:smartfueling/screens/login_screen.dart';
 import 'package:smartfueling/screens/signup_screen.dart';
 import 'package:smartfueling/screens/user_profile.dart';
+import 'package:smartfueling/widgets/trip.dart';
 import './widgets/location.dart';
 import './widgets/metrics.dart';
 

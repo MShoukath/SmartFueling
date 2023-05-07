@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Metrics extends StatefulWidget {
   const Metrics({super.key});
@@ -11,9 +12,11 @@ class Metrics extends StatefulWidget {
 
 class _MetricsState extends State<Metrics> {
   String fuelLeft = '0';
+  int mileage = 0;
+  int range = 0;
 
   Widget fuelLevel() {
-    DatabaseReference ref = FirebaseDatabase.instance.ref("Sensor/distance");
+    DatabaseReference ref = FirebaseDatabase.instance.ref("Sensor/FuelLevel");
     ref.onValue.listen((event) {
       setState(() {
         fuelLeft = event.snapshot.value.toString();

@@ -128,9 +128,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       final user = FirebaseAuth.instance.currentUser;
                       if (user != null) {
                         final uid = user.uid;
-                        CollectionReference user_data =
+                        user.updateDisplayName(_userName.text);
+                        CollectionReference userData =
                             FirebaseFirestore.instance.collection('Users');
-                        user_data.add({
+                        userData.add({
                           'user_name': _userName.text,
                           'user_id': uid,
                           'email_id': _userEmail.text,
