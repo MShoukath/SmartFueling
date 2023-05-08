@@ -6,6 +6,36 @@ import 'dart:convert' as convert;
 import 'dart:math' show cos, sqrt, asin;
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 
+// class LatLng {
+//   double latitude;
+//   double longitude;
+
+//   LatLng(this.latitude, this.longitude);
+//   @override
+//   String toString() {
+//     return '$longitude,$latitude';
+//   }
+// }
+
+// class LatLngBounds {
+//   LatLng northeast;
+//   LatLng southwest;
+
+//   LatLngBounds({required this.northeast, required this.southwest});
+
+//   bool contains(LatLng point) {
+//     return point.latitude >= southwest.latitude &&
+//         point.latitude <= northeast.latitude &&
+//         point.longitude >= southwest.longitude &&
+//         point.longitude <= northeast.longitude;
+//   }
+
+//   @override
+//   String toString() {
+//     return '$southwest,$northeast';
+//   }
+// }
+
 class LatLng1 {
   double latitude;
   double longitude;
@@ -65,15 +95,16 @@ class RouteSegment {
   bool refueled = false;
   RouteSegment({
     required this.startPoint,
+    LatLng1? endPoint,
   }) {
-    endPoint = startPoint!;
+    endPoint = endPoint ?? startPoint!;
     bounds = LatLngBounds1(
         northeast: LatLng1(startPoint!.latitude, startPoint!.longitude),
         southwest: LatLng1(startPoint!.latitude, startPoint!.longitude));
-    // points.add(startPoint);
+    points.add(startPoint!);
     startPoint = null;
   }
-  bool extend(LatLng1 point) {
+  bool extend(LatLng1 point, int segmentSize) {
     LatLngBounds1 temp = LatLngBounds1(
         northeast:
             LatLng1(bounds.northeast.latitude, bounds.northeast.longitude),
@@ -140,13 +171,15 @@ class RouteSegment {
       double newLng = (temp.northeast.longitude + temp.southwest.longitude) / 2;
       lngseed = LatLng1(newLat, newLng);
     } else {
-      assert(false, 'New point is too far');
+      // assert(false, 'New point is too far');
       return point;
     }
-    return (calculateDistance(latseed, point) <
-            calculateDistance(lngseed, point))
-        ? latseed
-        : lngseed;
+    LatLng1 seed =
+        (calculateDistance(latseed, point) < calculateDistance(lngseed, point))
+            ? latseed
+            : lngseed;
+
+    return seed;
   }
 
   static int calculateDistance(LatLng1 point1, LatLng1 point2) {
@@ -265,6 +298,10 @@ class MapServices {
 
     var json = convert.jsonDecode(response.body);
     // print(json['geocoded_waypoints'].length);
+    Duration time = Duration(
+        seconds: (json['routes'][0]['legs']
+            .map((leg) => leg['duration']['value'])
+            .reduce((value, element) => value + element)));
     var results = {
       'status': 'Route Retrieval Successfull',
       'Fuel Stop Count': json['geocoded_waypoints'].length - 2,
@@ -294,12 +331,13 @@ class MapServices {
               json['routes'][0]['legs'].first['start_location']['lat'],
               json['routes'][0]['legs'].first['start_location']['lng'],
             )),
-      'distance': json['routes'][0]['legs']
-          .map((leg) => leg['distance']['value'])
-          .reduce((value, element) => value + element),
-      'duration': json['routes'][0]['legs']
-          .map((leg) => leg['duration']['value'])
-          .reduce((value, element) => value + element),
+      'distance': (json['routes'][0]['legs']
+                  .map((leg) => leg['distance']['value'])
+                  .reduce((value, element) => value + element) /
+              1000)
+          .round(),
+      'duration':
+          '${time.inHours}h:${time.inMinutes.remainder(60)}m:${time.inSeconds.remainder(60)}s',
       'polyline': json['routes'][0]['overview_polyline']['points'],
       'polylineDecoded': PolylinePoints()
           .decodePolyline(json['routes'][0]['overview_polyline']['points'])
@@ -318,7 +356,7 @@ class MapServices {
     }));
     // print(results);
 
-    if (results['distance'] as int > currentRange) {
+    if (results['distance'] * 1000 > currentRange) {
       int segmentSize = (results['distance'] / 50) > 3000
           ? ((results['distance'] / 50) < (12000)
               ? (results['distance'] / 50).round()
@@ -336,7 +374,7 @@ class MapServices {
       };
       int boxCount = 0;
       for (final LatLng1 point in polylines) {
-        if (currentBox.extend(point)) {
+        if (currentBox.extend(point, RouteSegment.segmentSize)) {
           continue;
         } else {
           boxes.add(currentBox);
@@ -356,10 +394,12 @@ class MapServices {
             boxCount = 0;
             boxWaypoints = '';
           }
-          currentBox = RouteSegment(
-              startPoint: RouteSegment.getSeed(currentBox.bounds, point));
-          assert(currentBox.extend(point),
-              'Point extend failed ${RouteSegment.calculateDistance(currentBox.endPoint, point)}\n ${currentBox.endPoint} \n $point \n ${boxes[boxes.length - 2].bounds}}');
+          LatLng1 startPoint = RouteSegment.getSeed(currentBox.bounds, point);
+          currentBox = RouteSegment(startPoint: startPoint);
+          if (!currentBox.extend(point, RouteSegment.segmentSize)) {
+            currentBox.extend(
+                point, RouteSegment.calculateDistance(startPoint, point));
+          }
         }
       }
       boxes.add(currentBox);
@@ -380,6 +420,7 @@ class MapServices {
 
       String waypoints = '&waypoints=optimize:true';
       // var boxResults = await getDistanceMatrix(origin, boxWaypoints);
+      List<GasStation> finalGasStations = [];
       bool backtrack = false;
       for (int box = 0; box < boxes.length;) {
         int distCovered = boxResults['distances'][0][box];
@@ -405,6 +446,7 @@ class MapServices {
           var gasResults = await getDistanceMatrix(origin, gasStationWaypoints);
           gasStationWaypoints = '';
           for (int i = 0; i < gasStations.length && i < 10; i++) {
+            print(gasResults['distances']);
             gasStations[i].toDistance = gasResults['distances'][0][i] ?? 0;
             gasStations[i].toDuration = gasResults['durations'][0][i] ?? 0;
             gasStationWaypoints += gasResults['distances'][0][i] < currentRange
@@ -432,12 +474,13 @@ class MapServices {
             gasStations[i].fromDistance = gasStationResults['distances'][i][0];
             gasStations[i].fromDuration = gasStationResults['durations'][i][0];
           }
-          gasStations.sort((a, b) => ((a.toDuration + a.fromDuration) *
-                  (1 + (1 / a.toDistance)))
-              .compareTo(
-                  (b.toDuration + b.fromDuration) * (1 + (1 / b.toDistance))));
+          gasStations.sort((a, b) =>
+              ((a.toDuration + a.fromDuration) * (1 + (10 / a.toDistance)))
+                  .compareTo((b.toDuration + b.fromDuration) *
+                      (1 + (100 / b.toDistance))));
           // print(gasStations);
           waypoints += '|${gasStations.first.placeID}';
+          finalGasStations.add(gasStations.first);
           currentRange = gasStations.first.toDistance + maxRange;
           boxes[box].refueled = true;
           print(
@@ -451,9 +494,14 @@ class MapServices {
       nresults.addAll({
         'orignalDistance': results['distance'],
         'orignalDuration': results['duration'],
+        'gasStations': finalGasStations,
       });
       return nresults;
     }
     return results;
   }
+}
+
+void main(List<String> args) {
+  print(RouteSegment.calculateDistance(LatLng1(13, 81), LatLng1(13, 82)));
 }
